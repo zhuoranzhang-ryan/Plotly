@@ -1,12 +1,20 @@
 d3.json("./samples.json").then( (importedData) => {
+    
+    //Extract useful data from json file.
     var data = importedData;
     var metadata = data.metadata;
-    var samples = data.samples;
-    var dropdownList = metadata.map(row => row.id);
+    var samples = data.samples; 
     
+    //Bind data to dropdown menu options
     var dropdownMenu = d3.select("#selDataset");
-    dropdownMenu.selectAll("option").data(samples).enter().append("option").attr("value", function(d) {return d.id}).text(function(d) {return d.id});
+    dropdownMenu.selectAll("option")
+        .data(samples)
+        .enter()
+        .append("option")
+        .attr("value", function(d) {return d.id})
+        .text(function(d) {return d.id});
     
+    // Define a function to show bar chart
     function showBar(barData) {
         var data = [{
                 type: 'bar',
@@ -19,6 +27,8 @@ d3.json("./samples.json").then( (importedData) => {
                     colorscale: "Portland",
                     reversescale: true
                 },
+                
+            // Make bar charts sorted in ascending order.
                 transforms: [{
                     type: 'sort',
                     target: 'x',
@@ -40,7 +50,8 @@ d3.json("./samples.json").then( (importedData) => {
         
         Plotly.newPlot("bar", data, layout);       
     }
-        
+    
+    //Define a function to show metadata
     function showMeta(data) {
         d3.select("#sample-metadata").html('');
         Object.entries(data).forEach(([key, value]) => {
@@ -48,11 +59,15 @@ d3.json("./samples.json").then( (importedData) => {
         });  
     }
     
+    //Define a function to show bubble chart.
     function showBubble(data) {
+        
+        // Customize the bubble size by a factor of 0.75 in order to reduce bubble overlapping.
         scalesize = [];
         data.sample_values.forEach(d => {
             scalesize.push(d*0.75);
         });
+        
         var data_bubble = [{
                 type: 'scatter',
                 mode: 'markers',
@@ -81,8 +96,9 @@ d3.json("./samples.json").then( (importedData) => {
         Plotly.newPlot("bubble", data_bubble, bubblelayout);
     }
     
+    //Define a function to show gauge chart.
     function showGauge(data) {
-        var traceGauge = {
+        var dataGauge = [{
           type: 'pie',
           showlegend: false,
           hole: 0.4,
@@ -107,9 +123,10 @@ d3.json("./samples.json").then( (importedData) => {
             labels: ['0','1','2','3','4','5','6','7','8','9'],
             hoverinfo: 'label'
           }
-        };
-        var dataGauge = [traceGauge];
-
+        }];
+        
+        // Doing math to set the pointer angle correctly
+        // x and y are the displacement from pointer origin.
         var radians = (1 - data/10) * Math.PI - Math.PI/20;
         var radius = 0.3;
         var x = radius * Math.cos(radians);
@@ -127,12 +144,14 @@ d3.json("./samples.json").then( (importedData) => {
             shapes: [{
                         type: 'path',
                         fillcolor: 'red',
+                    // Making a triangle shape with tip pointing at correct target.
                         path: `M 0.48 0.5 L ${0.5+x} ${0.5+y} L 0.52 0.5 Z`,
                         line: {
                           color: 'red',
                           width: 1
                         }
                     }, 
+                    // Use a filled circle to cover the bottom of the above triangle.
                     {
                       type: 'circle',
                       fillcolor: 'red',
@@ -145,14 +164,13 @@ d3.json("./samples.json").then( (importedData) => {
                       width: 3
                       }
             }],
-          title: 'Belly Button Washing Frequency',
-          xaxis: {visible: false, range: [-1, 1]},
-          yaxis: {visible: false, range: [-1, 1]}
+          title: 'Belly Button Washing Frequency'
         }
 
         Plotly.newPlot('gauge', dataGauge, gaugeLayout);
     }
     
+    //Initialize all charts using the first dataset.
     function init() {
         var selDataset = samples[0];
         var metaInfo = metadata[0];
@@ -163,9 +181,13 @@ d3.json("./samples.json").then( (importedData) => {
         showGauge(metaInfo.wfreq); 
     }
     
+    //Event listener 
     d3.selectAll("#selDataset").on("change", updatePlotly);
     
-    function updatePlotly() {   
+    //Update function for all figures.
+    function updatePlotly() {
+        
+        //Retrive the selected index and select the corresponding dataset.
         var index = this.selectedIndex;
         var selDataset = samples[index];
         var metaInfo = metadata[index];
